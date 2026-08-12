@@ -1,0 +1,7 @@
+[package]
+name = "stl"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rl = { path = "../rl", git = "https://github.com/funnyboy-roks/rl.git" }
