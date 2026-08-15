@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rl = { path = "../rl", git = "https://github.com/funnyboy-roks/rl.git" }
+rl = { path = "../rl" }
+thiserror = "2.0.20"
+# rl = { git = "https://github.com/funnyboy-roks/rl.git" }

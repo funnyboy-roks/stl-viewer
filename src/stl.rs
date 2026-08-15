@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 type Vec3 = (f32, f32, f32);
 
 #[derive(Debug, Clone)]
@@ -10,19 +12,19 @@ pub struct Facet {
 
 #[derive(Debug, Clone)]
 pub struct Solid {
-    pub name: String,
+    pub name: Option<String>,
     pub facets: Vec<Facet>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Error)]
 pub enum ParseError {
+    #[error("Expected {}, get {:?}", expected, actual)]
     ExpectedWord {
         expected: String,
         actual: Option<String>,
     },
-    ExpectedF32 {
-        actual: Option<String>,
-    },
+    #[error("Expected f32, got {:?}", actual)]
+    ExpectedF32 { actual: Option<String> },
 }
 
 #[derive(Debug, Clone)]
@@ -135,7 +137,7 @@ impl<'a> StrParser<'a> {
 
     pub fn take_solid(&mut self) -> Result<Solid, ParseError> {
         self.expect_word("solid")?;
-        let name = self.take_word().unwrap_or("").to_string();
+        let name = self.take_word().map(Into::into);
 
         let mut facets = Vec::new();
 
@@ -152,30 +154,11 @@ impl<'a> StrParser<'a> {
         }
 
         self.expect_word("endsolid")?;
-        let name2 = self.take_word().unwrap_or("");
+        let name2 = self.take_word();
 
-        assert_eq!(name, name2);
+        assert_eq!(name.as_deref(), name2);
 
         Ok(Solid { name, facets })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct BinParser<'a> {
-    content: &'a [u8],
-    ntriangles: u32,
-    offset: usize,
-}
-
-impl<'a> BinParser<'a> {
-    pub fn new(content: &'a [u8]) -> Self {
-        let content = &content[80..];
-        let (ntriangles, content) = content.split_first_chunk().unwrap();
-        Self {
-            content,
-            ntriangles: u32::from_le_bytes(*ntriangles),
-            offset: 0,
-        }
     }
 }
 
@@ -197,18 +180,15 @@ fn parse_bin(content: &[u8]) -> Result<Solid, ParseError> {
         let (v1, rest) = parse_bin_vec(rest);
         let (v2, rest) = parse_bin_vec(rest);
         let (v3, rest) = parse_bin_vec(rest);
-        facets.push(dbg!(Facet {
+        facets.push(Facet {
             normal: norm,
             v1,
             v2,
             v3,
-        }));
+        });
         content = &rest[2..];
     }
-    Ok(Solid {
-        name: "".into(),
-        facets,
-    })
+    Ok(Solid { name: None, facets })
 }
 
 pub fn parse_stl(content: &[u8]) -> Result<Solid, ParseError> {
@@ -227,8 +207,8 @@ mod test {
     fn it_works() {
         let content = include_str!("../test.stl");
 
-        let mut parser = StrParser::new(&content);
+        let mut parser = StrParser::new(content);
 
-        dbg!(parser.take_solid());
+        dbg!(parser.take_solid().unwrap());
     }
 }
