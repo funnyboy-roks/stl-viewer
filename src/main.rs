@@ -131,6 +131,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut show_controls = true;
     let mut wireframe = false;
     let mut colour = 0;
+    let mut show_grid = true;
+    let mut show_axes = true;
 
     let font_size = 32;
     let font = Font::load_from_memory(
@@ -155,6 +157,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             wireframe ^= true;
         }
         if frame.keyboard().is_key_pressed(Key::Two) {
+            show_grid ^= true;
+        }
+        if frame.keyboard().is_key_pressed(Key::Three) {
+            show_axes ^= true;
+        }
+        if frame.keyboard().is_key_pressed(Key::Four) {
             colour += 1;
             colour %= COLOURS.len();
         }
@@ -166,8 +174,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             show_controls ^= true;
         }
         if frame.keyboard().is_key_pressed(Key::Right) {
-            current_path += 1;
-            current_path %= paths.len();
+            current_path = (current_path + 1) % paths.len();
             loaded = load_stl(&paths[current_path])?;
             frame.window_mut().set_title(title!());
         }
@@ -178,9 +185,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let camera_movement = if frame.mouse().is_button_down(MouseButton::Left) {
-            // let forward = camera.target - camera.position;
-            // let right = forward.cross(camera.position);
-            // right.normalize() * 0.5
             let delta = frame.mouse().delta() * 0.1;
             Vector3::new(delta.y, -delta.x, 0.)
         } else {
@@ -208,10 +212,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         canvas.clear_background(Color::from_int(0x181818ff));
         canvas.with_camera_3d(camera, |cam| {
-            draw_axis(cam, Vector3::UNIT_X, Color::RED.brightness(-0.25));
-            draw_axis(cam, Vector3::UNIT_Y, Color::GREEN.brightness(-0.25));
-            draw_axis(cam, Vector3::UNIT_Z, Color::BLUE.brightness(-0.25));
-            draw_xy_grid(cam, 200, 1.);
+            if show_axes {
+                draw_axis(cam, Vector3::UNIT_X, Color::RED.brightness(-0.25));
+                draw_axis(cam, Vector3::UNIT_Y, Color::GREEN.brightness(-0.25));
+                draw_axis(cam, Vector3::UNIT_Z, Color::BLUE.brightness(-0.25));
+            }
+            if show_grid {
+                draw_xy_grid(cam, 200, 1.);
+            }
             rlgl::with_matrix(|_| {
                 let mode = if wireframe {
                     DrawingMode::Lines
@@ -270,7 +278,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Controls:",
                 "Toggle Controls [/]",
                 &format!("Wireframe       [1]: {}", toggle(wireframe)),
-                &format!("Object Colour   [2]: {}", COLOURS[colour].1),
+                &format!("Show Grid       [2]: {}", toggle(show_grid)),
+                &format!("Show Axes       [3]: {}", toggle(show_axes)),
+                &format!("Object Colour   [4]: {}", COLOURS[colour].1),
                 "Change Object   [Left/Right]",
                 "Reset Camera    [Home]",
             ];
