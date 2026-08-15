@@ -121,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .title(&title!())
         .size(800, 600)
         .target_fps(60)
-        .flags(ConfigFlags::MSAA_4X_HINT)
+        .flags(ConfigFlags::MSAA_4X_HINT | ConfigFlags::WINDOW_RESIZABLE)
         .init();
 
     let mut loaded = load_stl(&paths[current_path])?;
@@ -143,7 +143,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();
 
     let mut text_max = Vector2::ZERO;
-    let mut max_debug = 0f32;
 
     let default_camera = Camera3D::builder()
         .position((10., 10., 10.))
@@ -328,24 +327,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if true {
-            let lines = &[format!("Triangles: {}", loaded.solid.facets.len())];
+            let lines = &[
+                format!("FPS: {}", canvas.window().get_fps()),
+                format!("Triangles: {}", loaded.solid.facets.len()),
+            ];
+            let line_spacing = 10.;
 
+            let mut max_debug = 0f32;
             let mut y = 0.;
+
             for l in lines {
                 let sz = font.measure_text(l, font_size, spacing);
                 max_debug = max_debug.max(sz.x);
-                y -= sz.y;
+                y -= sz.y + line_spacing;
             }
 
-            let line_spacing = 10.;
-
             canvas.draw_rectangle(
-                Rectangle::new(
-                    0.,
-                    canvas.height() as f32 + y,
-                    max_debug + 10.,
-                    -y + lines.len() as f32 * line_spacing,
-                ),
+                Rectangle::new(0., canvas.height() as f32 + y, max_debug + 10., -y),
                 Color::BLACK.alpha(0.5),
             );
 
