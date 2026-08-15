@@ -126,7 +126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut loaded = load_stl(&paths[current_path])?;
 
-    let scale = 10.;
+    let mut scale = 0.1;
 
     let mut show_controls = true;
     let mut wireframe = false;
@@ -153,6 +153,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut camera = default_camera;
     while let Some(mut frame) = window.next_frame() {
+        if frame.keyboard().is_key_pressed(Key::Q) {
+            break;
+        }
         if frame.keyboard().is_key_pressed(Key::One) {
             wireframe ^= true;
         }
@@ -182,6 +185,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             current_path = current_path.checked_sub(1).unwrap_or(paths.len() - 1);
             loaded = load_stl(&paths[current_path])?;
             frame.window_mut().set_title(title!());
+        }
+        if frame.keyboard().is_key_pressed(Key::Up) {
+            scale += 0.01;
+        }
+        if frame.keyboard().is_key_pressed(Key::Down) {
+            scale -= 0.01;
         }
 
         let camera_movement = if frame.mouse().is_button_down(MouseButton::Left) {
@@ -232,9 +241,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .apply(signum2)
                         .mul_components(loaded.min.apply(f32::abs));
                     for f in &loaded.solid.facets {
-                        let v1 = (Vector3::from(f.v1) - normalise) / scale;
-                        let v2 = (Vector3::from(f.v2) - normalise) / scale;
-                        let v3 = (Vector3::from(f.v3) - normalise) / scale;
+                        let v1 = (Vector3::from(f.v1) - normalise) * scale;
+                        let v2 = (Vector3::from(f.v2) - normalise) * scale;
+                        let v3 = (Vector3::from(f.v3) - normalise) * scale;
 
                         let (color, _) = COLOURS[colour];
 
@@ -248,7 +257,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let normal = if f.normal == (0., 0., 0.) {
                                 v1.to(v2).cross(v1.to(v3))
                             } else {
-                                Vector3::from(f.normal) / scale
+                                Vector3::from(f.normal) * scale
                             };
 
                             let angle = normal
@@ -277,12 +286,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let lines = [
                 "Controls:",
                 "Toggle Controls [/]",
-                &format!("Wireframe       [1]: {}", toggle(wireframe)),
-                &format!("Show Grid       [2]: {}", toggle(show_grid)),
-                &format!("Show Axes       [3]: {}", toggle(show_axes)),
-                &format!("Object Colour   [4]: {}", COLOURS[colour].1),
-                "Change Object   [Left/Right]",
-                "Reset Camera    [Home]",
+                &format!("Wireframe              [1]: {}", toggle(wireframe)),
+                &format!("Show Grid              [2]: {}", toggle(show_grid)),
+                &format!("Show Axes              [3]: {}", toggle(show_axes)),
+                &format!("Object Colour          [4]: {}", COLOURS[colour].1),
+                &format!("Object Scale     [Up/Down]: {:.1}", scale * 10.),
+                "Change Object [Left/Right]",
+                "Reset Camera        [Home]",
             ];
 
             let mut y = 0.;
